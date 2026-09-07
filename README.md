@@ -6,10 +6,20 @@ different destination depending on their country, and can report every click (wi
 query-string parameters) to a stats endpoint of your choosing.
 
 ```
-https://go.example.com/amazon   ->  https://www.amazon.com.au/   (default)
-                                ->  https://www.amazon.co.uk/    (visitor in GB)
-                                ->  https://www.amazon.com/      (visitor in US)
+https://patrickeasy.github.io/Linkershortener/amazon
+    ->  https://www.amazon.com.au/   (default)
+    ->  https://www.amazon.co.uk/    (visitor in GB)
+    ->  https://www.amazon.com/      (visitor in US)
 ```
+
+The same build runs unchanged in three places — the generated pages only use
+relative paths, so nothing needs rebuilding to move between them:
+
+| Where                | Base URL                                        | Example short link                                           |
+|----------------------|-------------------------------------------------|--------------------------------------------------------------|
+| Local preview        | `http://localhost:8000/`                        | `http://localhost:8000/amazon/`                              |
+| GitHub project page  | `https://patrickeasy.github.io/Linkershortener/`| `https://patrickeasy.github.io/Linkershortener/amazon`       |
+| Custom domain (opt.) | `https://go.example.com/`                       | `https://go.example.com/amazon`                              |
 
 ## How it works
 
@@ -49,13 +59,48 @@ Linkershortener/
 
 ```bash
 cd ~/Documents/GitHub/Linkershortener
-source .venv/bin/activate          # venv already created; Logpy_v2 installed editable
-cp .env.example .env               # then edit SITE_URL (and STATS_ENDPOINT when ready)
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ../Logpy_v2         # optional: coloured console output via Logpy
+cp .env.example .env               # SITE_URL is preset to the GitHub Pages URL
 ```
 
-Fresh clone elsewhere? `python3 -m venv .venv && source .venv/bin/activate` is all
-that's needed — the script has no third-party dependencies. Logpy is used for
-coloured output when present and silently skipped otherwise.
+The script has no third-party dependencies; Logpy is used for coloured output when
+present and silently skipped otherwise, so a fresh clone works with just the venv.
+
+## Running locally
+
+```bash
+python shortener.py add amazon https://www.amazon.com.au/ --geo GB=https://www.amazon.co.uk/
+python shortener.py build
+python shortener.py serve                 # http://localhost:8000/
+```
+
+Then open `http://localhost:8000/amazon/` in a browser. Everything works as it will
+in production, including the geo lookup (your browser calls the geo API directly)
+and the stats beacon if `STATS_ENDPOINT` is set — so local clicks *will* be counted
+unless you leave it blank while testing. The trailing slash on `/amazon/` matters
+locally: Python's dev server doesn't redirect `/amazon` → `/amazon/` the way GitHub
+Pages does. Use `--port 9000` to pick a different port.
+
+`add` and `list` print links using `SITE_URL`, which is the public address rather
+than the local one; that is purely cosmetic and doesn't affect the generated pages.
+
+## Running on GitHub Pages (`https://patrickeasy.github.io/Linkershortener/`)
+
+1. Make sure `.env` has `SITE_URL=https://patrickeasy.github.io/Linkershortener`
+   (the default in `.env.example`). With a `github.io` address no `CNAME` file is
+   written — GitHub rejects one there.
+2. `python shortener.py build`, then commit and push `docs/` and `links.json`.
+3. On GitHub: **Settings → Pages → Build and deployment** — Source *Deploy from a
+   branch*, Branch `main`, Folder `/docs`. Save. The site is live within a minute
+   at `https://patrickeasy.github.io/Linkershortener/` and every link at
+   `https://patrickeasy.github.io/Linkershortener/<slug>`.
+4. Every change afterwards is just `build` → commit → push.
+
+Because the site lives under the `/Linkershortener/` sub-path, the generator never
+writes root-absolute paths like `/amazon/` — every reference in the generated HTML is
+relative, which is what lets the same output serve from `localhost:8000/` and
+`github.io/Linkershortener/` alike.
 
 ## Usage
 
@@ -102,22 +147,20 @@ on GitHub Pages.
 
 You can edit `links.json` by hand; just run `build` afterwards.
 
-## Deploying to GitHub Pages
+## Optional: a custom domain
 
-1. Push the repo to GitHub (public or private — Pages works with both on paid plans;
-   public on free plans).
-2. **Settings → Pages → Build and deployment**: Source = *Deploy from a branch*,
-   Branch = `main`, Folder = `/docs`. Save.
-3. **Custom domain** (optional but recommended — this is what makes the links "custom
-   styled"): enter e.g. `go.example.com` in the *Custom domain* box. At your DNS
-   provider add a `CNAME` record `go` → `<your-username>.github.io`. Tick
+Short links get shorter and more on-brand with your own domain (`go.example.com/amazon`
+instead of `patrickeasy.github.io/Linkershortener/amazon`):
+
+1. Set `SITE_URL=https://go.example.com` in `.env` and run `build` — this writes
+   `docs/CNAME`, which is how GitHub Pages remembers the domain across deploys.
+2. At your DNS provider add a `CNAME` record `go` → `patrickeasy.github.io`.
+3. **Settings → Pages → Custom domain**: enter `go.example.com`, save, and tick
    *Enforce HTTPS* once the certificate is issued (a few minutes).
-   `build` writes `docs/CNAME` from `SITE_URL` so the setting survives redeploys.
-4. Every time you add/remove links: `build` → `git add docs links.json` →
-   `git commit` → `git push`. Pages redeploys in under a minute.
+4. Commit and push. The `github.io` address keeps working and redirects to the domain.
 
-Without a custom domain, set `SITE_URL=https://<user>.github.io/Linkershortener` and
-links will be `https://<user>.github.io/Linkershortener/<slug>`.
+Switching back is just restoring `SITE_URL` and rebuilding — `build` removes the
+`CNAME` file when the URL is a `github.io` one.
 
 ### Optional: build in CI instead of committing `docs/`
 

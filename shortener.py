@@ -437,6 +437,9 @@ def cmd_serve(args: argparse.Namespace) -> None:
         raise SystemExit("Nothing built yet - run `python shortener.py build` first.")
     handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(directory))
     info(f"Serving {directory.relative_to(ROOT)}/ at http://localhost:{args.port}/  (Ctrl+C to stop)")
+    for slug in sorted(load_links()):
+        print(f"    http://localhost:{args.port}/{slug}/")
+    info("Note: the trailing slash is required locally; GitHub Pages adds it for you.")
     try:
         http.server.ThreadingHTTPServer(("", args.port), handler).serve_forever()
     except KeyboardInterrupt:
