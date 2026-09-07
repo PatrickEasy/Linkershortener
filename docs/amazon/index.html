@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Redirecting...</title>
+<noscript><meta http-equiv="refresh" content="0; url=https://www.amazon.com.au/"></noscript>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         display: flex; align-items: center; justify-content: center; height: 100vh;
+         margin: 0; color: #444; background: #fafafa; }
+  a { color: #0366d6; }
+</style>
+</head>
+<body>
+<p>Redirecting&hellip; <a id="fallback" href="https://www.amazon.com.au/">Click here if nothing happens.</a></p>
+<script>
+(function () {
+  var CONFIG = {"slug": "amazon", "defaultUrl": "https://www.amazon.com.au/", "geo": {"GB": "https://www.amazon.co.uk/"}, "forwardQuery": false, "statsEndpoint": "", "geoApiUrl": "https://ipapi.co/json/", "geoTimeoutMs": 1500};
+
+  var params = new URLSearchParams(window.location.search);
+  var query = {};
+  params.forEach(function (v, k) { query[k] = v; });
+
+  function withQuery(url) {
+    if (!CONFIG.forwardQuery || !window.location.search) return url;
+    var joiner = url.indexOf("?") === -1 ? "?" : "&";
+    return url + joiner + window.location.search.slice(1);
+  }
+
+  function track(country, target) {
+    if (!CONFIG.statsEndpoint) return;
+    try {
+      var payload = JSON.stringify({
+        slug: CONFIG.slug,
+        target: target,
+        country: country || null,
+        query: query,
+        referrer: document.referrer || null,
+        userAgent: navigator.userAgent,
+        language: navigator.language || null,
+        timestamp: new Date().toISOString()
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(CONFIG.statsEndpoint, new Blob([payload], { type: "text/plain" }));
+      } else {
+        fetch(CONFIG.statsEndpoint, { method: "POST", body: payload, keepalive: true, mode: "no-cors" });
+      }
+    } catch (e) { /* never block the redirect on analytics */ }
+  }
+
+  function go(country) {
+    var target = (country && CONFIG.geo[country]) || CONFIG.defaultUrl;
+    target = withQuery(target);
+    document.getElementById("fallback").href = target;
+    track(country, target);
+    window.location.replace(target);
+  }
+
+  // Geo lookup only when this link has per-country rules; otherwise go straight away.
+  if (!Object.keys(CONFIG.geo).length) { go(null); return; }
+
+  var done = false;
+  var timer = setTimeout(function () { if (!done) { done = true; go(null); } }, CONFIG.geoTimeoutMs);
+  fetch(CONFIG.geoApiUrl, { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (done) return; done = true; clearTimeout(timer);
+      var cc = (data.country_code || data.country || data.countryCode || "").toString().toUpperCase();
+      go(cc || null);
+    })
+    .catch(function () { if (done) return; done = true; clearTimeout(timer); go(null); });
+})();
+</script>
+</body>
+</html>

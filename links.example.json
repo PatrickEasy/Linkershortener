@@ -1,0 +1,17 @@
+{
+  "amazon": {
+    "url": "https://www.amazon.com.au/",
+    "created": "2026-09-07T12:00:00+00:00",
+    "geo": {
+      "GB": "https://www.amazon.co.uk/",
+      "US": "https://www.amazon.com/"
+    },
+    "note": "Storefront that matches the visitor's country"
+  },
+  "promo": {
+    "url": "https://example.com/spring-sale",
+    "created": "2026-09-07T12:00:00+00:00",
+    "forward_query": true,
+    "title": "Spring sale"
+  }
+}

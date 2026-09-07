@@ -1,0 +1,9 @@
+{
+  "amazon": {
+    "url": "https://www.amazon.com.au/",
+    "created": "2026-09-07T23:03:44+00:00",
+    "geo": {
+      "GB": "https://www.amazon.co.uk/"
+    }
+  }
+}

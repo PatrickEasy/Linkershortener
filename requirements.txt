@@ -1,0 +1,9 @@
+# shortener.py uses only the Python standard library.
+#
+# Logpy (Patrick's console/logging helpers) is optional - the script falls back
+# to plain print() when it isn't importable.  Locally it is installed as an
+# editable dependency from the sibling clone:
+#
+#     pip install -e ../Logpy_v2
+#
+# so nothing needs to be listed here for a fresh clone to work.

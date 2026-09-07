@@ -1,0 +1,22 @@
+# Local configuration (contains your stats endpoint etc.)
+.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Logpy session logs
+logs/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# NOTE: docs/ is intentionally NOT ignored - GitHub Pages serves it.
